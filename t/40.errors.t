@@ -2,12 +2,9 @@ use strict;
 use warnings;
 use Test::More;
 use Captcha::reCAPTCHA;
-use Captcha::reCAPTCHA::Mailhide;
 
 use constant PUBKEY     => '6LdAAAkAwAAAFJj6ACG3Wlix_GuQJMNGjMQnw5UY';
 use constant PRIVKEY    => '6LdAAAkAwAAAix_GF6AMQnw5UCG3JjWluQJMNGjY';
-use constant MH_PUBKEY  => 'UcV0oq5XNVM01AyYmMNRqvRA==';
-use constant MH_PRIVKEY => 'E542D5DB870FF2D2B9D01070FF04F0C8';
 
 my @schedule;
 
@@ -56,24 +53,6 @@ BEGIN {
                 $c->check_answer( PRIVKEY );
             },
             expect => qr/you must pass the remote ip/
-        },
-        {
-            name  => 'mailhide_html: No args',
-            class => 'Captcha::reCAPTCHA::Mailhide',
-            try   => sub {
-                my $c = shift;
-                $c->mailhide_html();
-            },
-            expect => qr/you have to sign up for a public and private key/
-        },
-        {
-            name  => 'mailhide_html: No email',
-            class => 'Captcha::reCAPTCHA::Mailhide',
-            try   => sub {
-                my $c = shift;
-                $c->mailhide_html( MH_PUBKEY, MH_PRIVKEY );
-            },
-            expect => qr/You must supply an email address/
         },
     );
 
