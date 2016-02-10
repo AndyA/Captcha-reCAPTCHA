@@ -6,13 +6,14 @@ use Carp;
 use LWP::UserAgent;
 use HTML::Tiny;
 
-our $VERSION = '0.94';
+our $VERSION = '0.95';
 
 use constant API_SERVER => 'http://www.google.com/recaptcha/api';
 use constant API_SECURE_SERVER =>
  'https://www.google.com/recaptcha/api';
 use constant API_VERIFY_SERVER => 'http://www.google.com';
 use constant SERVER_ERROR      => 'recaptcha-not-reachable';
+use constant API_V2_SERVER => 'https://www.google.com/recaptcha/api.js';
 
 sub new {
   my $class = shift;
@@ -35,7 +36,7 @@ sub get_options_setter {
   my $self = shift;
   my $options = shift || return '';
 
-  croak "The argument to get_options_setter must be a hashref"
+  croak "The argument to get_v1_options_setter must be a hashref"
    unless 'HASH' eq ref $options;
 
   my $h = $self->_html;
@@ -49,15 +50,40 @@ sub get_options_setter {
   ) . "\n";
 }
 
+sub get_options_setter_v2 {
+  my $self = shift;
+  my ($pubkey, $options) = @_;
+
+  croak "The argument to get_options_setter must be a hashref"
+   unless ('HASH' eq ref $options) && $options;
+
+   my $h = $self->_html;
+
+   return $h->div({class => 'g-recaptcha',
+                  'data-site' => $pubkey,
+                  %{$options}
+                });
+}
+
 sub get_html {
   my $self = shift;
-  my ( $pubkey, $error, $use_ssl, $options ) = @_;
+  my ( $pubkey, $error, $use_ssl, $options, $use_v1 ) = @_;
 
   croak
    "To use reCAPTCHA you must get an API key from https://www.google.com/recaptcha/admin/create"
    unless $pubkey;
 
   my $h = $self->_html;
+
+  # Use new version by default
+  return join('',
+    $h->script({
+      type => 'text/javascript',
+      src => API_V2_SERVER},
+    'async defer'),
+    $self->get_options_setter_v2( $pubkey, $options )
+  ) unless $use_v1;
+
   my $server = $use_ssl ? API_SECURE_SERVER : API_SERVER;
 
   my $query = { k => $pubkey };
@@ -252,7 +278,7 @@ doesn't come up in the user's browser.
 
 =item C<< $options >>
 
-Optional. A reference to a hash of options for the captcha. See 
+Optional. A reference to a hash of options for the captcha. See
 C<< get_options_setter >> for more details.
 
 =back
