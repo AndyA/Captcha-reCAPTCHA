@@ -12,8 +12,92 @@ use constant API_SERVER => 'http://www.google.com/recaptcha/api';
 use constant API_SECURE_SERVER =>
  'https://www.google.com/recaptcha/api';
 use constant API_VERIFY_SERVER => 'http://www.google.com';
+use constant API_VERIFY_SERVER_V2 => ' https://www.google.com/recaptcha/api/siteverify';
 use constant SERVER_ERROR      => 'recaptcha-not-reachable';
 use constant API_V2_SERVER => 'https://www.google.com/recaptcha/api.js';
+
+=head1 NAME
+
+Captcha::reCAPTCHA - A Perl implementation of the reCAPTCHA API
+
+=head1 VERSION
+
+This document describes Captcha::reCAPTCHA version 0.95
+
+=head1 NOTICE
+
+Please note this module has now been switched to using v2 which is the
+new version "I'm not a robot". If you still want to use the old version
+you can use 'get_html_v1' and 'check_answer_v1' although this is not recommended.
+
+=cut
+
+=head1 SYNOPSIS
+
+Note this release contains methods that use
+
+    use Captcha::reCAPTCHA;
+
+    my $c = Captcha::reCAPTCHA->new;
+
+    # Output form
+    print $c->get_html( 'your public key here' );
+
+    # To use the old version use (not recommended)
+    print $c->get_html_v1( 'your public key here' );
+
+    # Verify submission
+    my $result = $c->check_answer( $privatekey, $remoteip, $response);
+
+    # Verify submission for old version
+    my $result = $c->check_answer_v1(
+        'your private key here', $ENV{'REMOTE_ADDR'},
+        $challenge, $response
+    );
+
+    if ( $result->{is_valid} ) {
+        print "Yes!";
+    }
+    else {
+        # Error
+        $error = $result->{error};
+    }
+
+For complete examples see the /examples subdirectory
+
+=head1 DESCRIPTION
+
+reCAPTCHA is a hybrid mechanical turk and captcha that allows visitors
+who complete the captcha to assist in the digitization of books.
+
+From L<http://recaptcha.net/learnmore.html>:
+
+    reCAPTCHA improves the process of digitizing books by sending words that
+    cannot be read by computers to the Web in the form of CAPTCHAs for
+    humans to decipher. More specifically, each word that cannot be read
+    correctly by OCR is placed on an image and used as a CAPTCHA. This is
+    possible because most OCR programs alert you when a word cannot be read
+    correctly.
+
+This version 1 Perl implementation is modelled on the PHP interface that can be
+found here:
+
+L<http://recaptcha.net/plugins/php/>
+
+To use reCAPTCHA you need to register your site here:
+
+L<https://www.google.com/recaptcha/admin/create>
+
+
+=head1 INTERFACE
+
+=over
+
+=item C<< new >>
+
+Create a new C<< Captcha::reCAPTCHA >>.
+
+=cut
 
 sub new {
   my $class = shift;
@@ -32,11 +116,37 @@ sub _initialize {
 
 sub _html { shift->{_html} ||= HTML::Tiny->new }
 
+=item C<< get_options_setter( $options ) >>
+
+You can optionally customize the look of the reCAPTCHA widget with some
+JavaScript settings. C<get_options_setter> returns a block of Javascript
+wrapped in <script> .. </script> tags that will set the options to be used
+by the widget.
+
+C<$options> is a reference to a hash that may contain the following keys:
+
+=over
+
+=item C<theme>
+
+Defines which theme to use for reCAPTCHA. Possible values are 'red',
+'white' or 'blackglass'. The default is 'red'.
+
+=item C<tabindex>
+
+Sets a tabindex for the reCAPTCHA text box. If other elements in the
+form use a tabindex, this should be set so that navigation is easier for
+the user. Default: 0.
+
+=back
+
+=cut
+
 sub get_options_setter {
   my $self = shift;
   my $options = shift || return '';
 
-  croak "The argument to get_v1_options_setter must be a hashref"
+  croak "The argument to get_options_setter must be a hashref"
    unless 'HASH' eq ref $options;
 
   my $h = $self->_html;
@@ -50,24 +160,92 @@ sub get_options_setter {
   ) . "\n";
 }
 
-sub get_options_setter_v2 {
+=item C<< get_options_setter_div( $pubkey, $options ) >>
+
+You can optionally customize the look of the reCAPTCHA widget with some
+settings. C<get_options_setter_div> returns a div element
+wrapped in <div> .. </div> tags that will set the options to be used
+by the widget.
+
+C<$options> is a reference to a hash that may contain the following keys:
+
+=over
+
+=item C<data-theme>
+
+Defines which theme to use for reCAPTCHA. Possible values are 'dark',
+'light'. The default is 'light'.
+
+=item C<data-type>
+
+Defines the type of captcha to server. Possible values are 'audio' or 'image'.
+Default is 'image'
+
+=item C<data-size>
+
+Defines the size of the widget. Possible values are 'compact' or 'normal'.
+Default is 'normal'
+
+=item C<data-tabindex>
+
+Defines the tabindex of the widget and challenge. If other elements in your
+page use tabindex, it should be set to make user navigation easier.
+Default is 0
+
+=item C<data-callback>
+
+Defines the name of your callback function to be executed when the user submits
+a successful CAPTCHA response. The user's response, g-recaptcha-response,
+will be the input for your callback function.
+
+=item C<data-expired-callback>
+
+Defines the name of your callback function to be executed when the recaptcha
+response expires and the user needs to solve a new CAPTCHA
+
+=back
+=cut
+
+sub get_options_setter_div {
   my $self = shift;
   my ($pubkey, $options) = @_;
 
-  croak "The argument to get_options_setter must be a hashref"
-   unless ('HASH' eq ref $options) && $options;
+  croak "The argument to get_options_setter_div must be a hashref"
+   if $options && ref $options ne 'HASH';
+
+   # Make option in to an empty hash if nothing there
+   $options = {} unless $options;
+
+  croak "public key must be supplied" unless $pubkey;
 
    my $h = $self->_html;
 
    return $h->div({class => 'g-recaptcha',
-                  'data-site' => $pubkey,
-                  %{$options}
-                });
+        'data-sitekey' => $pubkey,
+        %{$options}
+      });
 }
+
+=item C<< get_html( $pubkey, \%options ) >>
+
+Generates HTML to display the captcha using the new api
+pubkey is public key for \%options types the same as get_options_setter
+
+  print $captcha->get_html($pubkey, $options);
+
+This uses ssl by default and does not display custom error messages
+
+=cut
 
 sub get_html {
   my $self = shift;
-  my ( $pubkey, $error, $use_ssl, $options, $use_v1 ) = @_;
+  my $pubkey = shift;
+
+  # Take the last argumet as options (for compatability)
+  my $options = pop @_;
+
+  # If options is not a hash then it's undef (for compatibility)
+  $options = ref $options eq 'HASH' ? $options : undef;
 
   croak
    "To use reCAPTCHA you must get an API key from https://www.google.com/recaptcha/admin/create"
@@ -77,18 +255,61 @@ sub get_html {
 
   # Use new version by default
   return join('',
-    $h->script({
-      type => 'text/javascript',
-      src => API_V2_SERVER},
-    'async defer'),
-    $self->get_options_setter_v2( $pubkey, $options )
-  ) unless $use_v1;
+    '<script src="https://www.google.com/recaptcha/api.js" async defer></script>',
+    $self->get_options_setter_div( $pubkey, $options )
+  );
+}
+
+=item C<< get_html_v1( $pubkey, $error, $use_ssl, \%options ) >>
+
+Generates HTML to display the captcha using api version 1.
+
+    print $captcha->get_html_v1( $PUB, $err );
+
+=over
+
+=item C<< $pubkey >>
+
+Your reCAPTCHA public key, from the API Signup Page
+
+=item C<< $error >>
+
+Optional. If set this should be either a string containing a reCAPTCHA
+status code or a result hash as returned by C<< check_answer_v1 >>.
+
+=item C<< $use_ssl >>
+
+Optional. Should the SSL-based API be used? If you are displaying a page
+to the user over SSL, be sure to set this to true so an error dialog
+doesn't come up in the user's browser.
+
+=item C<< $options >>
+
+Optional. A reference to a hash of options for the captcha. See
+C<< get_options_setter >> for more details.
+
+=back
+
+Returns a string containing the HTML that should be used to display
+the captcha.
+
+=cut
+
+sub get_html_v1 {
+  my $self = shift;
+  my ( $pubkey, $error, $use_ssl, $options ) = @_;
+
+  croak
+   "To use reCAPTCHA you must get an API key from https://www.google.com/recaptcha/admin/create"
+   unless $pubkey;
+
+  my $h = $self->_html;
 
   my $server = $use_ssl ? API_SECURE_SERVER : API_SERVER;
 
   my $query = { k => $pubkey };
   if ( $error ) {
-    # Handle the case where the result hash from check_answer
+    # Handle the case where the result hash from check_answer_v1
     # is passed.
     if ( 'HASH' eq ref $error ) {
       return '' if $error->{is_valid};
@@ -147,7 +368,158 @@ sub _post_request {
   return $ua->post( $url, $args );
 }
 
+=item C<< check_answer >>
+
+After the user has filled out the HTML form, including their answer for
+the CAPTCHA, use C<< check_answer >> to check their answer when they
+submit the form. The user's answer will be in field,
+g-recaptcha-response. The reCAPTCHA
+library will make an HTTP request to the reCAPTCHA server and verify the
+user's answer.
+
+=over
+
+=item C<< $privkey >>
+
+Your reCAPTCHA private key, from the API Signup Page.
+
+=item C<< $remoteip >>
+
+The user's IP address, in the format 192.168.0.1 (optional)
+
+=item C<< $response >>
+
+The value of the form field recaptcha_response_field.
+
+=back
+
+Returns a reference to a hash containing two fields: C<is_valid>
+and C<error>.
+
+    my $result = $c->check_answer(
+        'your private key here', $ENV{'REMOTE_ADDR'},
+        $response
+    );
+
+    my $result = $c->check_answer(
+        'your private key here', $ENV{'REMOTE_ADDR'},
+        $response
+    );
+
+    if ( $result->{is_valid} ) {
+        print "Yes!";
+    }
+    else {
+        # Error
+        $error = $result->{error};
+    }
+
+See the /examples subdirectory for examples of how to call C<check_answer>.
+
+Note: this method will make an HTTP request to Google to verify the user input.
+If this request must be routed via a proxy in your environment, use the
+standard environment variable to specify the proxy address, e.g.:
+
+    $ENV{http_proxy} = 'http://myproxy:3128';
+
+=cut
+
 sub check_answer {
+    my $self = shift;
+
+    my $privkey = shift @_;
+    # For compatibility we assume last is allways response
+    my $response = pop @_;
+    my $remoteip = shift @_;
+
+    croak
+    "To use reCAPTCHA you must get an API key from https://www.google.com/recaptcha/admin/create"
+      unless $privkey;
+
+    croak "To check answer the user response token must be provided" unless $response;
+
+    my $request = {
+      secert => $privkey,
+      response => $response,
+    };
+    $request->{remoteip} = $remoteip if $remoteip;
+
+    my $resp = $self->_post_request(
+    API_VERIFY_SERVER_V2,
+    $request
+    );
+
+    if ( $resp->success ) {
+      my ( $answer, $message ) = split( /\n/, $resp->content, 2 );
+
+      return { is_valid => 1 } if ( $answer =~ /true/ );
+
+      chomp $message;
+      return { is_valid => 0, error => $message };
+
+    } else {
+      return { is_valid => 0, error => $resp->content };
+    }
+
+}
+
+=item C<< check_answer_v1 >>
+
+After the user has filled out the HTML form, including their answer for
+the CAPTCHA, use C<< check_answer_v1 >> to check their answer when they
+submit the form. The user's answer will be in two form fields,
+recaptcha_challenge_field and recaptcha_response_field. The reCAPTCHA
+library will make an HTTP request to the reCAPTCHA server and verify the
+user's answer.
+
+=over
+
+=item C<< $privkey >>
+
+Your reCAPTCHA private key, from the API Signup Page.
+
+=item C<< $remoteip >>
+
+The user's IP address, in the format 192.168.0.1.
+
+=item C<< $challenge >>
+
+The value of the form field recaptcha_challenge_field
+
+=item C<< $response >>
+
+The value of the form field recaptcha_response_field.
+
+=back
+
+Returns a reference to a hash containing two fields: C<is_valid>
+and C<error>.
+
+    my $result = $c->check_answer_v1(
+        'your private key here', $ENV{'REMOTE_ADDR'},
+        $challenge, $response
+    );
+
+    if ( $result->{is_valid} ) {
+        print "Yes!";
+    }
+    else {
+        # Error
+        $error = $result->{error};
+    }
+
+See the /examples subdirectory for examples of how to call C<check_answer_v1>.
+
+Note: this method will make an HTTP request to Google to verify the user input.
+If this request must be routed via a proxy in your environment, use the
+standard environment variable to specify the proxy address, e.g.:
+
+    $ENV{http_proxy} = 'http://myproxy:3128';
+
+=back
+=cut
+
+sub check_answer_v1 {
   my $self = shift;
   my ( $privkey, $remoteip, $challenge, $response ) = @_;
 
@@ -180,8 +552,7 @@ sub check_answer {
       chomp $message;
       return { is_valid => 0, error => $message };
     }
-  }
-  else {
+  } else {
     return { is_valid => 0, error => SERVER_ERROR };
   }
 }
@@ -189,181 +560,6 @@ sub check_answer {
 1;
 __END__
 
-=head1 NAME
-
-Captcha::reCAPTCHA - A Perl implementation of the reCAPTCHA API
-
-=head1 VERSION
-
-This document describes Captcha::reCAPTCHA version 0.94
-
-=head1 SYNOPSIS
-
-    use Captcha::reCAPTCHA;
-
-    my $c = Captcha::reCAPTCHA->new;
-
-    # Output form
-    print $c->get_html( 'your public key here' );
-
-    # Verify submission
-    my $result = $c->check_answer(
-        'your private key here', $ENV{'REMOTE_ADDR'},
-        $challenge, $response
-    );
-
-    if ( $result->{is_valid} ) {
-        print "Yes!";
-    }
-    else {
-        # Error
-        $error = $result->{error};
-    }
-
-For complete examples see the /examples subdirectory
-
-=head1 DESCRIPTION
-
-reCAPTCHA is a hybrid mechanical turk and captcha that allows visitors
-who complete the captcha to assist in the digitization of books.
-
-From L<http://recaptcha.net/learnmore.html>:
-
-    reCAPTCHA improves the process of digitizing books by sending words that
-    cannot be read by computers to the Web in the form of CAPTCHAs for
-    humans to decipher. More specifically, each word that cannot be read
-    correctly by OCR is placed on an image and used as a CAPTCHA. This is
-    possible because most OCR programs alert you when a word cannot be read
-    correctly.
-
-This Perl implementation is modelled on the PHP interface that can be
-found here:
-
-L<http://recaptcha.net/plugins/php/>
-
-To use reCAPTCHA you need to register your site here:
-
-L<https://www.google.com/recaptcha/admin/create>
-
-=head1 INTERFACE
-
-=over
-
-=item C<< new >>
-
-Create a new C<< Captcha::reCAPTCHA >>.
-
-=item C<< get_html( $pubkey, $error, $use_ssl, $options ) >>
-
-Generates HTML to display the captcha.
-
-    print $captcha->get_html( $PUB, $err );
-
-=over
-
-=item C<< $pubkey >>
-
-Your reCAPTCHA public key, from the API Signup Page
-
-=item C<< $error >>
-
-Optional. If set this should be either a string containing a reCAPTCHA
-status code or a result hash as returned by C<< check_answer >>.
-
-=item C<< $use_ssl >>
-
-Optional. Should the SSL-based API be used? If you are displaying a page
-to the user over SSL, be sure to set this to true so an error dialog
-doesn't come up in the user's browser.
-
-=item C<< $options >>
-
-Optional. A reference to a hash of options for the captcha. See
-C<< get_options_setter >> for more details.
-
-=back
-
-Returns a string containing the HTML that should be used to display
-the captcha.
-
-=item C<< get_options_setter( $options ) >>
-
-You can optionally customize the look of the reCAPTCHA widget with some
-JavaScript settings. C<get_options_setter> returns a block of Javascript
-wrapped in <script> .. </script> tags that will set the options to be used
-by the widget.
-
-C<$options> is a reference to a hash that may contain the following keys:
-
-=over
-
-=item C<theme>
-
-Defines which theme to use for reCAPTCHA. Possible values are 'red',
-'white' or 'blackglass'. The default is 'red'.
-
-=item C<tabindex>
-
-Sets a tabindex for the reCAPTCHA text box. If other elements in the
-form use a tabindex, this should be set so that navigation is easier for
-the user. Default: 0.
-
-=back
-
-=item C<< check_answer >>
-
-After the user has filled out the HTML form, including their answer for
-the CAPTCHA, use C<< check_answer >> to check their answer when they
-submit the form. The user's answer will be in two form fields,
-recaptcha_challenge_field and recaptcha_response_field. The reCAPTCHA
-library will make an HTTP request to the reCAPTCHA server and verify the
-user's answer.
-
-=over
-
-=item C<< $privkey >>
-
-Your reCAPTCHA private key, from the API Signup Page.
-
-=item C<< $remoteip >>
-
-The user's IP address, in the format 192.168.0.1.
-
-=item C<< $challenge >>
-
-The value of the form field recaptcha_challenge_field
-
-=item C<< $response >>
-
-The value of the form field recaptcha_response_field.
-
-=back
-
-Returns a reference to a hash containing two fields: C<is_valid>
-and C<error>.
-
-    my $result = $c->check_answer(
-        'your private key here', $ENV{'REMOTE_ADDR'},
-        $challenge, $response
-    );
-
-    if ( $result->{is_valid} ) {
-        print "Yes!";
-    }
-    else {
-        # Error
-        $error = $result->{error};
-    }
-
-See the /examples subdirectory for examples of how to call C<check_answer>.
-
-Note: this method will make an HTTP request to Google to verify the user input.
-If this request must be routed via a proxy in your environment, use the
-standard environment variable to specify the proxy address, e.g.:
-
-    $ENV{http_proxy} = 'http://myproxy:3128';
-
-=back
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
@@ -424,3 +620,5 @@ RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
 FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
 SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGES.
+
+=cut

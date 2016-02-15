@@ -46,13 +46,13 @@ BEGIN {
       expect => qr/To use reCAPTCHA you must get an API key from/
     },
     {
-      name  => 'check_answer: no ip',
+      name  => 'check_answer: no response',
       class => 'T::Captcha::reCAPTCHA',
       try   => sub {
         my $c = shift;
         $c->check_answer( PRIVKEY );
       },
-      expect => qr/you must pass the remote ip/
+      expect => qr/the user response token must be provided/
     },
   );
 
@@ -92,6 +92,7 @@ for my $test ( @schedule ) {
     like $@, $expect, "$name: error OK";
   }
   else {
+    note "error is " . $@;
     ok !$@, "$name: no error OK";
   }
 }
