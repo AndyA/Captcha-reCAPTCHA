@@ -87,7 +87,7 @@ for my $test ( @schedule ) {
 
   $captcha->set_response( $test->{response} );
 
-  ok my $resp = $captcha->check_answer_v1( @{ $test->{args} } ), "$name: got response";
+  ok my $resp = $captcha->check_answer( @{ $test->{args} } ), "$name: got response";
 
   is $captcha->get_url,         $test->{check_url},  "$name: URL OK";
 

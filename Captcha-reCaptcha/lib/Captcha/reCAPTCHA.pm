@@ -226,23 +226,20 @@ sub get_options_setter_div {
       });
 }
 
-=item C<< get_html( $pubkey, \%options ) >>
+=item C<< get_html_v2( $pubkey, \%options ) >>
 
 Generates HTML to display the captcha using the new api
 pubkey is public key for \%options types the same as get_options_setter
 
-  print $captcha->get_html($pubkey, $options);
+  print $captcha->get_html_v2($pubkey, $options);
 
 This uses ssl by default and does not display custom error messages
 
 =cut
 
-sub get_html {
+sub get_html_v2 {
   my $self = shift;
-  my $pubkey = shift;
-
-  # Take the last argumet as options (for compatability)
-  my $options = pop @_;
+  my ($pubkey, $options) = shift @_;
 
   # If options is not a hash then it's undef (for compatibility)
   $options = ref $options eq 'HASH' ? $options : undef;
@@ -260,11 +257,11 @@ sub get_html {
   );
 }
 
-=item C<< get_html_v1( $pubkey, $error, $use_ssl, \%options ) >>
+=item C<< get_html( $pubkey, $error, $use_ssl, \%options ) >>
 
 Generates HTML to display the captcha using api version 1.
 
-    print $captcha->get_html_v1( $PUB, $err );
+    print $captcha->get_html( $PUB, $err );
 
 =over
 
@@ -275,7 +272,7 @@ Your reCAPTCHA public key, from the API Signup Page
 =item C<< $error >>
 
 Optional. If set this should be either a string containing a reCAPTCHA
-status code or a result hash as returned by C<< check_answer_v1 >>.
+status code or a result hash as returned by C<< check_answer >>.
 
 =item C<< $use_ssl >>
 
@@ -295,7 +292,7 @@ the captcha.
 
 =cut
 
-sub get_html_v1 {
+sub get_html {
   my $self = shift;
   my ( $pubkey, $error, $use_ssl, $options ) = @_;
 
@@ -396,14 +393,14 @@ The value of the form field recaptcha_response_field.
 Returns a reference to a hash containing two fields: C<is_valid>
 and C<error>.
 
-    my $result = $c->check_answer(
-        'your private key here', $ENV{'REMOTE_ADDR'},
-        $response
+    my $result = $c->check_answer_v2(
+        'your private key here', $response,
+        $ENV{'REMOTE_ADDR'}
     );
 
-    my $result = $c->check_answer(
-        'your private key here', $ENV{'REMOTE_ADDR'},
-        $response
+    my $result = $c->check_answer_v2(
+        'your private key here', $response,
+        $ENV{'REMOTE_ADDR'}
     );
 
     if ( $result->{is_valid} ) {
@@ -414,7 +411,7 @@ and C<error>.
         $error = $result->{error};
     }
 
-See the /examples subdirectory for examples of how to call C<check_answer>.
+See the /examples subdirectory for examples of how to call C<check_answer_v2>.
 
 Note: this method will make an HTTP request to Google to verify the user input.
 If this request must be routed via a proxy in your environment, use the
@@ -424,13 +421,10 @@ standard environment variable to specify the proxy address, e.g.:
 
 =cut
 
-sub check_answer {
+sub check_answer_v2 {
     my $self = shift;
 
-    my $privkey = shift @_;
-    # For compatibility we assume last is allways response
-    my $response = pop @_;
-    my $remoteip = shift @_;
+    my ($privkey, $response, $remoteip) = shift @_;
 
     croak
     "To use reCAPTCHA you must get an API key from https://www.google.com/recaptcha/admin/create"
@@ -463,10 +457,10 @@ sub check_answer {
 
 }
 
-=item C<< check_answer_v1 >>
+=item C<< check_answer >>
 
 After the user has filled out the HTML form, including their answer for
-the CAPTCHA, use C<< check_answer_v1 >> to check their answer when they
+the CAPTCHA, use C<< check_answer >> to check their answer when they
 submit the form. The user's answer will be in two form fields,
 recaptcha_challenge_field and recaptcha_response_field. The reCAPTCHA
 library will make an HTTP request to the reCAPTCHA server and verify the
@@ -495,7 +489,7 @@ The value of the form field recaptcha_response_field.
 Returns a reference to a hash containing two fields: C<is_valid>
 and C<error>.
 
-    my $result = $c->check_answer_v1(
+    my $result = $c->check_answer(
         'your private key here', $ENV{'REMOTE_ADDR'},
         $challenge, $response
     );
@@ -519,7 +513,7 @@ standard environment variable to specify the proxy address, e.g.:
 =back
 =cut
 
-sub check_answer_v1 {
+sub check_answer {
   my $self = shift;
   my ( $privkey, $remoteip, $challenge, $response ) = @_;
 

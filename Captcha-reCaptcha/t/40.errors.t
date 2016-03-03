@@ -50,9 +50,9 @@ BEGIN {
       class => 'T::Captcha::reCAPTCHA',
       try   => sub {
         my $c = shift;
-        $c->check_answer( PRIVKEY );
+        $c->check_answer( PRIVKEY, '' );
       },
-      expect => qr/the user response token must be provided/
+      expect => qr/you must pass the remote ip/
     },
   );
 

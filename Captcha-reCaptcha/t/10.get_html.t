@@ -3,57 +3,103 @@ use warnings;
 use Test::More;
 use Captcha::reCAPTCHA;
 
-my $pubkey = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+# Looks real. Isn't.
+use constant PUBKEY => '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
 
-note "create captcha object";
-ok my $captcha = Captcha::reCAPTCHA->new(), "new Cpatcha::reCAPTCHA Created OK";
-isa_ok $captcha, 'Captcha::reCAPTCHA';
+my @schedule;
 
-my @schedule = (
-{
-  name => 'Simple',
-  line => __LINE__,
-  args => [$pubkey],
-  expect =>
-  qq{<script src="https://www.google.com/recaptcha/api.js" async defer></script>} .
-    qq{<div class="g-recaptcha" data-sitekey="$pubkey"></div>\n}
-},
-{
-    name => 'Error',
-    line => __LINE__,
-    args => [ $pubkey, '<<some random error>>' ],
-    expect => qq{<script src="https://www.google.com/recaptcha/api.js" async defer></script>}
-        . qq{<div class="g-recaptcha" data-sitekey="$pubkey"></div>\n}
-  },
-  {
-    # This test is to make sure that the provided arguments are still passed in
-    name => 'Error in hash',
-    line => __LINE__,
-    args =>
-     [ $pubkey, { is_valid => 0, error => '<<some random error>>' } ],
-    expect =>
-     qq{<script src="https://www.google.com/recaptcha/api.js" async defer></script>}
-     . qq{<div class="g-recaptcha" data-sitekey="$pubkey" error="&lt;&lt;some random error&gt;&gt;" is_valid="0"></div>\n}
-  },
-  {
-    name => 'Secure',
-    line => __LINE__,
-    args => [ $pubkey, undef, 1 ],
-    expect =>
-     qq{<script src="https://www.google.com/recaptcha/api.js" async defer></script>}
-     . qq{<div class="g-recaptcha" data-sitekey="$pubkey"></div>\n}
-  },
-  {
-    name => 'Options',
-    line => __LINE__,
-    args =>
-     [ $pubkey, undef, 0, { theme => 'white', tabindex => 3 } ],
-    expect =>
-     qq{<script src="https://www.google.com/recaptcha/api.js" async defer></script>}
-     . qq{<div class="g-recaptcha" data-sitekey="$pubkey" tabindex="3" theme="white"></div>\n}
-  }
-);
+BEGIN {
+  my $pubkey = PUBKEY;
 
+  @schedule = (
+    {
+      name => 'Simple',
+      line => __LINE__,
+      args => [$pubkey],
+      expect =>
+       qq{<script src="http://www.google.com/recaptcha/api/challenge?k=$pubkey" }
+       . qq{type="text/javascript"></script>\n}
+       . qq{<noscript><iframe frameborder="0" height="300" }
+       . qq{src="http://www.google.com/recaptcha/api/noscript?k=$pubkey" }
+       . qq{width="500"></iframe><textarea cols="40" name="recaptcha_challenge_field" }
+       . qq{rows="3"></textarea><input name="recaptcha_response_field" type="hidden" }
+       . qq{value="manual_challenge" /></noscript>\n}
+    },
+    {
+      name => 'Error',
+      line => __LINE__,
+      args => [ $pubkey, '<<some random error>>' ],
+      expect =>
+       qq{<script src="http://www.google.com/recaptcha/api/challenge?error=%3c%3csome+random+error%3e%3e&amp;k=$pubkey" }
+       . qq{type="text/javascript"></script>\n}
+       . qq{<noscript><iframe frameborder="0" height="300" }
+       . qq{src="http://www.google.com/recaptcha/api/noscript?error=%3c%3csome+random+error%3e%3e&amp;k=$pubkey" }
+       . qq{width="500"></iframe><textarea cols="40" name="recaptcha_challenge_field" }
+       . qq{rows="3"></textarea><input name="recaptcha_response_field" type="hidden" }
+       . qq{value="manual_challenge" /></noscript>\n}
+    },
+    {
+      name => 'Error in hash',
+      line => __LINE__,
+      args =>
+       [ $pubkey, { is_valid => 0, error => '<<some random error>>' } ],
+      expect =>
+       qq{<script src="http://www.google.com/recaptcha/api/challenge?error=%3c%3csome+random+error%3e%3e&amp;k=$pubkey" }
+       . qq{type="text/javascript"></script>\n}
+       . qq{<noscript><iframe frameborder="0" height="300" }
+       . qq{src="http://www.google.com/recaptcha/api/noscript?error=%3c%3csome+random+error%3e%3e&amp;k=$pubkey" }
+       . qq{width="500"></iframe><textarea cols="40" name="recaptcha_challenge_field" }
+       . qq{rows="3"></textarea><input name="recaptcha_response_field" type="hidden" }
+       . qq{value="manual_challenge" /></noscript>\n}
+    },
+    {
+      name => 'Secure',
+      line => __LINE__,
+      args => [ $pubkey, undef, 1 ],
+      expect =>
+       qq{<script src="https://www.google.com/recaptcha/api/challenge?k=$pubkey" }
+       . qq{type="text/javascript"></script>\n}
+       . qq{<noscript><iframe frameborder="0" height="300" }
+       . qq{src="https://www.google.com/recaptcha/api/noscript?k=$pubkey" }
+       . qq{width="500"></iframe><textarea cols="40" name="recaptcha_challenge_field" }
+       . qq{rows="3"></textarea><input name="recaptcha_response_field" type="hidden" }
+       . qq{value="manual_challenge" /></noscript>\n}
+    },
+    {
+      name => 'Options',
+      line => __LINE__,
+      args =>
+       [ $pubkey, undef, 0, { theme => 'white', tabindex => 3 } ],
+      expect =>
+       qq(<script type="text/javascript">\n//<![CDATA[\nvar RecaptchaOptions = )
+       . qq({"tabindex":3,"theme":"white"};\n//]]>\n</script>\n)
+       . qq{<script src="http://www.google.com/recaptcha/api/challenge?k=$pubkey" }
+       . qq{type="text/javascript"></script>\n}
+       . qq{<noscript><iframe frameborder="0" height="300" }
+       . qq{src="http://www.google.com/recaptcha/api/noscript?k=$pubkey" }
+       . qq{width="500"></iframe><textarea cols="40" name="recaptcha_challenge_field" }
+       . qq{rows="3"></textarea><input name="recaptcha_response_field" type="hidden" }
+       . qq{value="manual_challenge" /></noscript>\n}
+    },
+    {
+      name => 'Use old verion',
+      line => __LINE__,
+      args =>
+       [ $pubkey, undef, 0, { theme => 'white', tabindex => 3 }, 1 ],
+      expect =>
+       qq(<script type="text/javascript">\n//<![CDATA[\nvar RecaptchaOptions = )
+       . qq({"tabindex":3,"theme":"white"};\n//]]>\n</script>\n)
+       . qq{<script src="http://www.google.com/recaptcha/api/challenge?k=$pubkey" }
+       . qq{type="text/javascript"></script>\n}
+       . qq{<noscript><iframe frameborder="0" height="300" }
+       . qq{src="http://www.google.com/recaptcha/api/noscript?k=$pubkey" }
+       . qq{width="500"></iframe><textarea cols="40" name="recaptcha_challenge_field" }
+       . qq{rows="3"></textarea><input name="recaptcha_response_field" type="hidden" }
+       . qq{value="manual_challenge" /></noscript>\n}
+    },
+  );
+  plan tests => 3 * @schedule;
+}
 
 for my $test ( @schedule ) {
   my $name = $test->{name};
@@ -61,7 +107,5 @@ for my $test ( @schedule ) {
   isa_ok $captcha, 'Captcha::reCAPTCHA';
   my $args = $test->{args};
   my $html = $captcha->get_html( @$args );
-  is $html, $test->{expect}, "$name: Generate HTML OK at line "  . $test->{line};
+  is $html, $test->{expect}, "$name: Generate HTML OK "  . $test->{line};
 }
-
-done_testing();
