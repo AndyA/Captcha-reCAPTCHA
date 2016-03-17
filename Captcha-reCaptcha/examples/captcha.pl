@@ -63,6 +63,10 @@ if ( $q->param( 'g-recaptcha-response' ) ) {
 # Generate the form
 print $c->get_html( PUBLIC_KEY );
 
+print "<h3>Version 2</h3>";
+
+print $c->get_html_v2( PUBLIC_KEY );
+
 print <<EOT;
     <br/>
     <input type="submit" value="submit" />

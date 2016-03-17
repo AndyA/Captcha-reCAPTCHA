@@ -12,7 +12,7 @@ use constant API_SERVER => 'http://www.google.com/recaptcha/api';
 use constant API_SECURE_SERVER =>
  'https://www.google.com/recaptcha/api';
 use constant API_VERIFY_SERVER => 'http://www.google.com';
-use constant API_VERIFY_SERVER_V2 => ' https://www.google.com/recaptcha/api/siteverify';
+use constant API_VERIFY_SERVER_V2 => 'https://www.google.com/recaptcha/api/siteverify';
 use constant SERVER_ERROR      => 'recaptcha-not-reachable';
 use constant API_V2_SERVER => 'https://www.google.com/recaptcha/api.js';
 
@@ -239,10 +239,7 @@ This uses ssl by default and does not display custom error messages
 
 sub get_html_v2 {
   my $self = shift;
-  my ($pubkey, $options) = shift @_;
-
-  # If options is not a hash then it's undef (for compatibility)
-  $options = ref $options eq 'HASH' ? $options : undef;
+  my ($pubkey, $options) = @_;
 
   croak
    "To use reCAPTCHA you must get an API key from https://www.google.com/recaptcha/admin/create"
@@ -306,7 +303,7 @@ sub get_html {
 
   my $query = { k => $pubkey };
   if ( $error ) {
-    # Handle the case where the result hash from check_answer_v1
+    # Handle the case where the result hash from check_answer
     # is passed.
     if ( 'HASH' eq ref $error ) {
       return '' if $error->{is_valid};
@@ -362,6 +359,7 @@ sub _post_request {
 
   my $ua = LWP::UserAgent->new();
   $ua->env_proxy();
+
   return $ua->post( $url, $args );
 }
 
@@ -422,39 +420,40 @@ standard environment variable to specify the proxy address, e.g.:
 =cut
 
 sub check_answer_v2 {
-    my $self = shift;
+    my $self = shift @_;
 
-    my ($privkey, $response, $remoteip) = shift @_;
+    my ($privkey, $response, $remoteip) = @_;
 
     croak
     "To use reCAPTCHA you must get an API key from https://www.google.com/recaptcha/admin/create"
       unless $privkey;
 
-    croak "To check answer the user response token must be provided" unless $response;
+    croak "To check answer, the user response token must be provided" unless $response;
+
+    # For sites that don't use SSL
+    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
 
     my $request = {
-      secert => $privkey,
+      secret => $privkey,
       response => $response,
     };
     $request->{remoteip} = $remoteip if $remoteip;
 
     my $resp = $self->_post_request(
-    API_VERIFY_SERVER_V2,
-    $request
+      API_VERIFY_SERVER_V2,
+      $request
     );
 
-    if ( $resp->success ) {
-      my ( $answer, $message ) = split( /\n/, $resp->content, 2 );
+    if ( $resp->is_success ) {
 
-      return { is_valid => 1 } if ( $answer =~ /true/ );
-
-      chomp $message;
-      return { is_valid => 0, error => $message };
-
-    } else {
-      return { is_valid => 0, error => $resp->content };
+      if ($resp->content =~ /success": true/) {
+        return { is_valid => 1 }
+      } else {
+        return { is_valid => 0, error => $resp->content};
+      }
     }
 
+    return { is_valid => 0, error => $resp->content }
 }
 
 =item C<< check_answer >>

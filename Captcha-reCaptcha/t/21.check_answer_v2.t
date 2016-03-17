@@ -8,6 +8,20 @@ use Data::Dumper;
 # Looks real. Isn't.
 use constant PRIVKEY => '6LdAAAkAwAAAix_GF6AMQnw5UCG3JjWluQJMNGjY';
 
+note "Create object";
+ok my $captcha = Captcha::reCAPTCHA->new(), "Captcha::reCAPTCHA: Created OK";
+
+note "croaks on no response";
+eval { $captcha->check_answer_v2() };
+ok $@ =~ /To use reCAPTCHA you must get an API key from/, "Breaks on no arguments";
+
+eval {$captcha->check_answer_v2( PRIVKEY )};
+ok $@ =~ /To check answer, the user response token must be provided/, "Break on no response arg";
+
+my $result = eval { $captcha->check_answer_v2( PRIVKEY, 'fakeresponse' ) };
+ok $result->{is_valid} = 0, "Google Say's the response is invalid";
+
+
 my @schedule;
 
 BEGIN {
@@ -17,29 +31,27 @@ BEGIN {
     {
       name => 'Simple correct',
       args =>
-       [ PRIVKEY, '192.168.0.1', '..challenge..', '..response..' ],
+       [ PRIVKEY, '..response..', '192.168.0.1' ],
       response   => "true\n",
       check_args => {
         privatekey => PRIVKEY,
         remoteip   => '192.168.0.1',
-        challenge  => '..challenge..',
         response   => '..response..'
       },
-      check_url => 'http://www.google.com/recaptcha/api/verify',
+      check_url => 'https://www.google.com/recaptcha/api/siteverify',
       expect    => { is_valid => 1 },
     },
     {
       name => 'Simple incorrect',
       args =>
-       [ PRIVKEY, '192.168.0.1', '..challenge..', '..response..' ],
+       [ PRIVKEY, 'response', '192.168.0.1' ],
       response   => "false\nincorrect-captcha-sol\n",
       check_args => {
         privatekey => PRIVKEY,
         remoteip   => '192.168.0.1',
-        challenge  => '..challenge..',
         response   => '..response..'
       },
-      check_url => 'http://www.google.com/recaptcha/api/verify',
+      check_url => 'https://www.google.com/recaptcha/api/siteverify',
       expect    => { is_valid => 0, error => 'incorrect-captcha-sol' },
     },
   );
@@ -87,7 +99,7 @@ for my $test ( @schedule ) {
 
   $captcha->set_response( $test->{response} );
 
-  ok my $resp = $captcha->check_answer( @{ $test->{args} } ), "$name: got response";
+  ok my $resp = $captcha->check_answer_v2( @{ $test->{args} } ), "$name: got response";
 
   is $captcha->get_url,         $test->{check_url},  "$name: URL OK";
 
@@ -98,3 +110,6 @@ for my $test ( @schedule ) {
     diag( Data::Dumper->Dump( [$resp], ['$got'] ) );
   }
 }
+
+
+done_testing();
