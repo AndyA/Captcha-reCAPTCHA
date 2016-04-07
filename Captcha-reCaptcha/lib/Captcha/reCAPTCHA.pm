@@ -574,8 +574,6 @@ None reported .
 
 =head1 BUGS AND LIMITATIONS
 
-No bugs have been reported.
-
 Please report any bugs or feature requests to
 C<bug-captcha-recaptcha@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org>.
@@ -583,6 +581,11 @@ L<http://rt.cpan.org>.
 =head1 AUTHOR
 
 Andy Armstrong  C<< <andy@hexten.net> >>
+
+Version 2 Mainainted by
+Sunny Patel C<<sunnypatel4141@gmail.com>>
+Please report any v2 bugs to Sunny Patel
+
 
 =head1 LICENCE AND COPYRIGHT
 
