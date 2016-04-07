@@ -2,6 +2,7 @@ package Test::TCaptcha;
 
 @ISA = qw(Captcha::reCAPTCHA);
 use Captcha::reCAPTCHA;
+use HTTP::Response;
 
 sub set_response {
   my $self     = shift;
