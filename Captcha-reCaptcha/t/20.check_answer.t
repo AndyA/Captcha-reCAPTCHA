@@ -5,6 +5,7 @@ use HTTP::Response;
 use Captcha::reCAPTCHA;
 use Data::Dumper;
 
+
 # Looks real. Isn't.
 use constant PRIVKEY => '6LdAAAkAwAAAix_GF6AMQnw5UCG3JjWluQJMNGjY';
 
@@ -66,9 +67,11 @@ sub _post_request {
   $self->{t_url}  = $url;
   $self->{t_args} = $args;
 
-  return HTTP::Response->new( 200, 'OK',
-    [ 'Content-type:' => 'text/plain' ],
-    $self->{t_response} );
+  my $r = HTTP::Response->new( 200, 'OK');
+  $r->header('Content-type' => 'text/plain');
+  $r->content( $self->{t_response} );
+
+  return $r;
 }
 
 sub get_url  { shift->{t_url} }
@@ -78,13 +81,19 @@ package main;
 
 for my $test ( @schedule ) {
   my $name = $test->{name};
+
   ok my $captcha = T::Captcha::reCAPTCHA->new(), "$name: Created OK";
+
   isa_ok $captcha, 'Captcha::reCAPTCHA';
+
   $captcha->set_response( $test->{response} );
-  ok my $resp = $captcha->check_answer( @{ $test->{args} } ),
-   "$name: got response";
+
+  ok my $resp = $captcha->check_answer( @{ $test->{args} } ), "$name: got response";
+
   is $captcha->get_url,         $test->{check_url},  "$name: URL OK";
+
   is_deeply $captcha->get_args, $test->{check_args}, "$name: args OK";
+
   unless ( is_deeply $resp, $test->{expect}, "$name: result OK" ) {
     diag( Data::Dumper->Dump( [ $test->{expect} ], ['$expected'] ) );
     diag( Data::Dumper->Dump( [$resp], ['$got'] ) );
