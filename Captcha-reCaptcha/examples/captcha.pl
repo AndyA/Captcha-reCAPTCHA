@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 # Simple CGI Captcha
 
-use lib 'lib';
 use strict;
 use warnings;
 use Captcha::reCAPTCHA;
@@ -9,9 +8,8 @@ use CGI::Simple;
 
 # Your reCAPTCHA keys from
 #  https://www.google.com/recaptcha/admin/create
-# Google's Test Key
-use constant PUBLIC_KEY  => '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
-use constant PRIVATE_KEY => '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe';
+use constant PUBLIC_KEY  => '<public key here>';
+use constant PRIVATE_KEY => '<private key here>';
 
 $| = 1;
 
@@ -43,29 +41,8 @@ if ( $q->param( 'recaptcha_response_field' ) ) {
   }
 }
 
-# For verson 2
-if ( $q->param( 'g-recaptcha-response' ) ) {
-  my $result = $c->check_answer(
-    PRIVATE_KEY, $ENV{'REMOTE_ADDR'},
-    $q->param( 'recaptcha_challenge_field' ),
-    $q->param( 'recaptcha_response_field' )
-  );
-
-  if ( $result->{is_valid} ) {
-    print "Yes!";
-  }
-  else {
-    $error = $result->{error};
-  }
-}
-
-
 # Generate the form
-print $c->get_html( PUBLIC_KEY );
-
-print "<h3>Version 2</h3>";
-
-print $c->get_html_v2( PUBLIC_KEY );
+print $c->get_html( PUBLIC_KEY, $error );
 
 print <<EOT;
     <br/>

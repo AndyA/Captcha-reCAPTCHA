@@ -45,3 +45,16 @@ Revision history for Captcha-reCAPTCHA
 
 0.93    2010-07-03
         Updated Perl plugin to use Google infrastructure.
+
+0.94    2010-07-03
+        Updated Perl plugin to use Google infrastructure.
+
+0.95    2012-08-05
+        RT 60940 https://rt.cpan.org/Ticket/Display.html?id=60940
+
+0.96    2012-09-28
+        RT 70525 https://rt.cpan.org/Ticket/Display.html?id=70525
+
+0.97    2012-10-22
+        RT 80326 https://rt.cpan.org/Ticket/Display.html?id=80326
+        Thanks to Bill Moseley (HANK) for the spot
