@@ -1,6 +1,7 @@
 {
    "abstract" : "A Perl implementation of the reCAPTCHA API",
    "author" : [
+      "Sunny Patel (Maintainer)<sunnypatel4141@gmail.com>",
       "Andy Armstrong <andy@hexten.net>"
    ],
    "dynamic_config" : 1,
@@ -16,7 +17,8 @@
    "no_index" : {
       "directory" : [
          "t",
-         "inc"
+         "inc",
+         "t/lib"
       ]
    },
    "prereqs" : {
@@ -39,5 +41,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.97"
+   "version" : "0.98"
 }

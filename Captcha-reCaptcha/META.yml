@@ -2,6 +2,7 @@
 abstract: 'A Perl implementation of the reCAPTCHA API'
 author:
   - 'Andy Armstrong <andy@hexten.net>'
+  - 'Sunny Patel (maintainer) <sunnypatel4141@gmail.com>'
 build_requires:
   ExtUtils::MakeMaker: 0
 configure_requires:
@@ -17,8 +18,9 @@ no_index:
   directory:
     - t
     - inc
+    - t/lib
 requires:
   HTML::Tiny: 0.904
   LWP::UserAgent: 0
   Test::More: 0
-version: 0.97
+version: 0.98
