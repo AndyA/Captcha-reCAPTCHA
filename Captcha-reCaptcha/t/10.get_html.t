@@ -4,7 +4,7 @@ use Test::More;
 use Captcha::reCAPTCHA;
 
 # Looks real. Isn't.
-use constant PUBKEY => '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+use constant PUBKEY => '6LdAAAkAwAAAFJj6ACG3Wlix_GuQJMNGjMQnw5UY';
 
 my @schedule;
 
@@ -82,21 +82,21 @@ BEGIN {
        . qq{value="manual_challenge" /></noscript>\n}
     },
     {
-      name => 'Use old verion',
-      line => __LINE__,
-      args =>
-       [ $pubkey, undef, 0, { theme => 'white', tabindex => 3 }, 1 ],
-      expect =>
-       qq(<script type="text/javascript">\n//<![CDATA[\nvar RecaptchaOptions = )
-       . qq({"tabindex":3,"theme":"white"};\n//]]>\n</script>\n)
-       . qq{<script src="http://www.google.com/recaptcha/api/challenge?k=$pubkey" }
-       . qq{type="text/javascript"></script>\n}
-       . qq{<noscript><iframe frameborder="0" height="300" }
-       . qq{src="http://www.google.com/recaptcha/api/noscript?k=$pubkey" }
-       . qq{width="500"></iframe><textarea cols="40" name="recaptcha_challenge_field" }
-       . qq{rows="3"></textarea><input name="recaptcha_response_field" type="hidden" }
-       . qq{value="manual_challenge" /></noscript>\n}
-    },
+       name => 'Use old verion',
+       line => __LINE__,
+       args =>
+        [ $pubkey, undef, 0, { theme => 'white', tabindex => 3 }, 1 ],
+       expect =>
+        qq(<script type="text/javascript">\n//<![CDATA[\nvar RecaptchaOptions = )
+        . qq({"tabindex":3,"theme":"white"};\n//]]>\n</script>\n)
+        . qq{<script src="http://www.google.com/recaptcha/api/challenge?k=$pubkey" }
+        . qq{type="text/javascript"></script>\n}
+        . qq{<noscript><iframe frameborder="0" height="300" }
+        . qq{src="http://www.google.com/recaptcha/api/noscript?k=$pubkey" }
+        . qq{width="500"></iframe><textarea cols="40" name="recaptcha_challenge_field" }
+        . qq{rows="3"></textarea><input name="recaptcha_response_field" type="hidden" }
+        . qq{value="manual_challenge" /></noscript>\n}
+     },
   );
   plan tests => 3 * @schedule;
 }

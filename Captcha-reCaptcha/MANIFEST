@@ -3,14 +3,13 @@ examples/captcha.pl
 lib/Captcha/reCAPTCHA.pm
 Makefile.PL
 MANIFEST
-MYMETA.json
-MYMETA.yml
 README
 t/00.load.t
 t/10.get_html.t
-t/11.get_html_v2.t
 t/20.check_answer.t
-t/21.check_answer_v1.t
 t/40.errors.t
 t/pod-coverage.t
 t/pod.t
+META.yml                                 Module meta-data (added by MakeMaker)
+SIGNATURE                                Public-key signature (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

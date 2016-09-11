@@ -6,7 +6,7 @@ use Carp;
 use LWP::UserAgent;
 use HTML::Tiny;
 
-our $VERSION = '0.95';
+our $VERSION = '0.98';
 
 use constant API_SERVER => 'http://www.google.com/recaptcha/api';
 use constant API_SECURE_SERVER =>
@@ -22,13 +22,13 @@ Captcha::reCAPTCHA - A Perl implementation of the reCAPTCHA API
 
 =head1 VERSION
 
-This document describes Captcha::reCAPTCHA version 0.95
+This document describes Captcha::reCAPTCHA version 0.98
 
 =head1 NOTICE
 
-Please note this module has now been switched to using v2 which is the
-new version "I'm not a robot". If you still want to use the old version
-you can use 'get_html_v1' and 'check_answer_v1' although this is not recommended.
+Please note this module now allows the use of v2
+there are no changes to version 1.
+Version 2 has seperate methds you can call
 
 =cut
 
@@ -40,17 +40,17 @@ Note this release contains methods that use
 
     my $c = Captcha::reCAPTCHA->new;
 
-    # Output form
+    # Output form New Version
+    print $c->get_html_v2( 'your public key here' );
+
+    # Version 1 (not recommended)
     print $c->get_html( 'your public key here' );
 
-    # To use the old version use (not recommended)
-    print $c->get_html_v1( 'your public key here' );
-
     # Verify submission
-    my $result = $c->check_answer( $privatekey, $remoteip, $response);
+    my $result $c->check_answer_v2($private_key, $response, $ENV{REMOTE_ADDR});
 
-    # Verify submission for old version
-    my $result = $c->check_answer_v1(
+    # Verify submission (Old Version)
+    my $result = $c->check_answer(
         'your private key here', $ENV{'REMOTE_ADDR'},
         $challenge, $response
     );
@@ -67,7 +67,7 @@ For complete examples see the /examples subdirectory
 
 =head1 DESCRIPTION
 
-reCAPTCHA is a hybrid mechanical turk and captcha that allows visitors
+reCAPTCHA version 1 is a hybrid mechanical turk and captcha that allows visitors
 who complete the captcha to assist in the digitization of books.
 
 From L<http://recaptcha.net/learnmore.html>:
@@ -79,7 +79,7 @@ From L<http://recaptcha.net/learnmore.html>:
     possible because most OCR programs alert you when a word cannot be read
     correctly.
 
-This version 1 Perl implementation is modelled on the PHP interface that can be
+version 1 of Perl implementation is modelled on the PHP interface that can be
 found here:
 
 L<http://recaptcha.net/plugins/php/>
@@ -88,6 +88,9 @@ To use reCAPTCHA you need to register your site here:
 
 L<https://www.google.com/recaptcha/admin/create>
 
+
+Version 2 is a new and eaasy to solve captcha that is
+"easy for humans to solve, but hard for 'bots' and other malicious software"
 
 =head1 INTERFACE
 
@@ -298,7 +301,6 @@ sub get_html {
    unless $pubkey;
 
   my $h = $self->_html;
-
   my $server = $use_ssl ? API_SECURE_SERVER : API_SERVER;
 
   my $query = { k => $pubkey };
@@ -359,11 +361,10 @@ sub _post_request {
 
   my $ua = LWP::UserAgent->new();
   $ua->env_proxy();
-
   return $ua->post( $url, $args );
 }
 
-=item C<< check_answer >>
+=item C<< check_answer_v2 >>
 
 After the user has filled out the HTML form, including their answer for
 the CAPTCHA, use C<< check_answer >> to check their answer when they
@@ -545,14 +546,14 @@ sub check_answer {
       chomp $message;
       return { is_valid => 0, error => $message };
     }
-  } else {
+  }
+  else {
     return { is_valid => 0, error => SERVER_ERROR };
   }
 }
 
 1;
 __END__
-
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
@@ -574,18 +575,25 @@ None reported .
 
 =head1 BUGS AND LIMITATIONS
 
+Please see below link
+
+https://rt.cpan.org/Public/Dist/Display.html?Name=Captcha-reCAPTCHA
+
 Please report any bugs or feature requests to
 C<bug-captcha-recaptcha@rt.cpan.org>, or through the web interface at
 L<http://rt.cpan.org>.
 
 =head1 AUTHOR
 
+Mainainted by
+Sunny Patel C<< <sunnypatel4141@gmail.com> >>
+Please report all bugs to Sunny Patel
+
+Version 0.95-0.97 was maintained by
+Fred Moyer C<< <fred@redhotpenguin.com> >>
+
+Original Author
 Andy Armstrong  C<< <andy@hexten.net> >>
-
-Version 2 Mainainted by
-Sunny Patel C<<sunnypatel4141@gmail.com>>
-Please report any v2 bugs to Sunny Patel
-
 
 =head1 LICENCE AND COPYRIGHT
 
@@ -616,5 +624,3 @@ RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
 FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
 SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGES.
-
-=cut
